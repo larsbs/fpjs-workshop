@@ -1,4 +1,4 @@
-import accounting from 'accounting'
+import accounting from 'accounting';
 import {
   add,
   compose,
@@ -15,7 +15,7 @@ import {
   replace,
   sortBy,
   toLower,
-} from 'ramda'
+} from 'ramda';
 
 // Example Data
 const CARS = [
@@ -55,41 +55,50 @@ const CARS = [
     dollar_value: 1300000,
     in_stock: false,
   },
-]
+];
 
 describe('Compose', () => {
   // Exercise 1
   test('Use compose() to rewrite the function below. Hint: prop() is curried.', () => {
     // TODO: isLastInStock :: [Car] -> Boolean
-    const isLastInStock = cars => {
-      const lastCar = last(cars)
-      return prop('in_stock', lastCar)
-    }
-    expect(isLastInStock(CARS)).toBe(false)
-  })
+    const isLastInStock = compose(
+      prop('in_stock'),
+      last,
+    );
+    expect(isLastInStock(CARS)).toBe(false);
+  });
 
   // Exercise 2:
   test('Use compose(), prop() and head() to retrieve the name of the first car.', () => {
-    const nameOfFirstCar = identity // TODO:
-    expect(nameOfFirstCar(CARS)).toBe('Ferrari FF')
-  })
+    const nameOfFirstCar = compose(
+      prop('name'),
+      head,
+    ); // TODO:
+    expect(nameOfFirstCar(CARS)).toBe('Ferrari FF');
+  });
 
   // Exercise 3:
   test('Use the helper function _average to refactor averageDollarValue as a composition.', () => {
-    const _average = xs => reduce(add, 0, xs) / xs.length // <- LEAVE BE
+    const average = (xs) => reduce(add, 0, xs) / xs.length; // <- LEAVE BE
     // TODO: averageDollarValue :: [Car] -> Int
-    const averageDollarValue = cars => {
-      const dollarValues = map(c => c.dollar_value, cars)
-      return average(dollarValues)
-    }
-    expect(averageDollarValue(CARS)).toBe(790700)
-  })
+    const averageDollarValue = compose(
+      average,
+      map(prop('dollar_value')),
+    );
+    expect(averageDollarValue(CARS)).toBe(790700);
+  });
 
   // Exercise 4:
   test("Write a function: sanitizeNames() using compose that returns a list of lowercase and underscored car's names:", () => {
     // e.g: sanitizeNames([{name: 'Ferrari FF', horsepower: 660, dollar_value: 700000, in_stock: true}]) //=> ['ferrari_ff'].
-    const _underscore = replace(/\W+/g, '_') // <-- leave this alone and use to sanitize
-    const sanitizeNames = identity // TODO:
+    const _underscore = replace(/\W+/g, '_'); // <-- leave this alone and use to sanitize
+    const sanitizeNames = map(
+      compose(
+        _underscore,
+        toLower,
+        prop('name'),
+      ),
+    ); // TODO:
     const expected = [
       'ferrari_ff',
       'spyker_c12_zagato',
@@ -97,29 +106,39 @@ describe('Compose', () => {
       'audi_r8',
       'aston_martin_one_77',
       'pagani_huayra',
-    ]
-    expect(sanitizeNames(CARS)).toEqual(expected)
-  })
+    ];
+    expect(sanitizeNames(CARS)).toEqual(expected);
+  });
 
   // Bonus 1:
   test('Refactor availablePrices with compose.', () => {
     const _formatPrice = compose(
       accounting.formatMoney,
-      prop('dollar_value')
-    )
-    const availablePrices = identity // TODO:
-    expect(availablePrices(CARS)).toBe('$700,000.00, $1,850,000.00')
-  })
+      prop('dollar_value'),
+    );
+    const availablePrices = compose(
+      join(', '),
+      map(_formatPrice),
+      filter(prop('in_stock')),
+    ); // TODO:
+    expect(availablePrices(CARS)).toBe('$700,000.00, $1,850,000.00');
+  });
 
   // Bonus 2:
   test('Refactor to pointfree. Hint: you can use flip().', () => {
-    const _append = flip(concat)
+    const _append = flip(concat);
     // TODO: fastestCar :: [Car] -> String
-    const fastestCar = cars => {
-      const sorted = sortBy(car => car.horsepower, cars)
-      const fastest = last(sorted)
-      return concat(fastest.name, ' is the fastest')
-    }
-    expect(fastestCar(CARS)).toBe('Aston Martin One-77 is the fastest')
-  })
-})
+    // const fastestCar = (cars) => {
+    //   const sorted = sortBy((car) => car.horsepower, cars);
+    //   const fastest = last(sorted);
+    //   return concat(fastest.name, ' is the fastest');
+    // };
+    const fastestCar = compose(
+      _append(' is the fastest'),
+      prop('name'),
+      last,
+      sortBy(prop('horsepower')),
+    );
+    expect(fastestCar(CARS)).toBe('Aston Martin One-77 is the fastest');
+  });
+});
